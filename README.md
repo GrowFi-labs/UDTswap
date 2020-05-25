@@ -48,6 +48,8 @@ When swapping, the fee is 0.3%, which is left in the liquidity pool and can be e
 
 
 ## Create UDTswap
+![creating pool](/cell%20structure/cell%20structure/create%20pool%20cell.png)
+
 There are at least 1 input and 3 outputs.
 
 The input is as follows.
@@ -66,6 +68,8 @@ The ckb and UDT input cells for pool creation can be located anywhere if the abo
 
 
 ## Add liquidity pool
+![adding liquidity](/cell%20structure/cell%20structure/UDTswap%20add%20liquidity%20cell.png)
+
 There are at least 3 inputs and 5 outputs.
 
 The inputs are:
@@ -92,6 +96,8 @@ The second UDT reserve means the second UDT amount in the liquidity pool.
 
 Total liquidity means the total ratio of the liquidity pool.
 
+![liquidity calculation](/cell%20structure/cell%20structure/liquidity%20calculation.png)
+
 For the second UDT to be added,
 - Second UDT reserve * First UDT amount to add liquidity / First UDT reserve + 1
 
@@ -102,6 +108,8 @@ When the liquidity pool is empty, if you add liquidity for the first time, you c
 
 
 ## Liquidity Pool Removal
+![removing liquidity](/cell%20structure/cell%20structure/UDTswap%20remove%20liquidity%20cell.png)
+
 There are at least 4 inputs and 4 outputs.
 
 The inputs are:
@@ -122,11 +130,15 @@ It does not need to be one cell that stores the user's liquidity information, an
 
 UDT output cells to be returned after removing liquidity can be located at any position if the above conditions are satisfied.
 
+![liquidity calculation](/cell%20structure/cell%20structure/liquidity%20calculation.png)
+
 For the returned UDT, it is as follows, and both the first and second UDTs are the same.
 - removing liquidity * UDT reserve / total liquidity
 
 
 ## Swap UDT to UDT
+![UDT to UDT swap](/cell%20structure/cell%20structure/UDTswap%20UDT%20to%20UDT%20swap%20cell.png)
+
 There are at least 3 inputs and 4 outputs.
 
 The inputs are:
@@ -160,7 +172,8 @@ The input reserve means the amount of liquidity pool provided by the user, which
 
 The output reserve is the amount of liquidity pool that the user will receive equal to ckb or UDT.
 
- 
+
+![swap calculation](/cell%20structure/cell%20structure/swap%20calculation.png)
 
 The formula is: 
 1. When determining the input amount based on the output amount
