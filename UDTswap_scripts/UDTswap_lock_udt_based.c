@@ -52,7 +52,6 @@ int check_udtswap_type(size_t index, uint8_t current_script_hash_buf[]) {
   return CKB_SUCCESS;
 }
 
-
 /*
  * @dev check UDTswap lock script
  * check group
@@ -61,24 +60,42 @@ int check_udtswap_type(size_t index, uint8_t current_script_hash_buf[]) {
 
 int main(int argc, char* argv[]) {
   uint64_t len = 0;
+  uint8_t script_buf[SCRIPT_HASH_SIZE];
+  size_t group_cnt = 1;
+  size_t i = 3;
   int ret = ckb_load_cell_by_field(NULL, &len, 0, 3, CKB_SOURCE_GROUP_INPUT, CKB_CELL_FIELD_LOCK_HASH);
   if (ret != INDEX_OUT_OF_BOUND_ERROR) {
-    return TOO_MANY_GROUP_CELL_ERROR - UDTSWAP_LOCK_ERROR_IDX;
-  }
+    if(ret == CKB_SUCCESS) {
+      i = 6;
+      while(1) {
+        ret = ckb_load_cell_by_field(NULL, &len, 0, i, CKB_SOURCE_GROUP_INPUT, CKB_CELL_FIELD_LOCK_HASH);
+        if (ret == INDEX_OUT_OF_BOUND_ERROR) {
+          break;
+        }
+        if (ret != CKB_SUCCESS) {
+          return UDTSWAP_SYSCALL_ERROR - UDTSWAP_LOCK_ERROR_IDX;
+        }
+        i += 3;
+      }
 
-  uint8_t script_buf[SCRIPT_HASH_SIZE];
+      group_cnt = i / 3;
+    } else {
+      return TOO_MANY_GROUP_CELL_ERROR - UDTSWAP_LOCK_ERROR_IDX;
+    }
+  }
   len = SCRIPT_HASH_SIZE;
-  ret = ckb_load_cell_by_field(script_buf, &len, 0, 2, CKB_SOURCE_GROUP_INPUT, CKB_CELL_FIELD_LOCK_HASH);
+  ret = ckb_load_cell_by_field(script_buf, &len, 0, i - 1, CKB_SOURCE_GROUP_INPUT, CKB_CELL_FIELD_LOCK_HASH);
   if (ret != CKB_SUCCESS) {
     return NOT_ENOUGH_GROUP_CELL_ERROR - UDTSWAP_LOCK_ERROR_IDX;
   }
-  //only 3 input with current lock checked
+  //only 3n (same pair, different pools) input with current lock checked
 
-  size_t i = 0;
+  i = 0;
   while(1) {
     ret = check_udtswap_type(i, script_buf);
     if(ret==CKB_SUCCESS) {
-      return CKB_SUCCESS;
+      group_cnt -= 1;
+      if(group_cnt == 0) return CKB_SUCCESS;
     }
     if(ret==INDEX_OUT_OF_BOUND_ERROR) {
       break;

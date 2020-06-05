@@ -343,7 +343,7 @@ int check_script_hash(uint8_t compare_script_hash_buf[], size_t index, size_t so
  * check udt type hash
  * check udtswap udts reserve and udts locked amount same
  * check udtswap script hash input, output same
- * check type hash
+ * check type hash, type code hash
  *
  * @param index UDTswap cell index
  * @param is_ckb1 first udt is CKB or not
@@ -604,6 +604,24 @@ int udtswap_default_check(
   }
 
   //udtswap udts reserve and udts locked amount same checked
+
+  uint8_t type_script_buf[UDTSWAP_TYPE_SCRIPT_SIZE];
+  uint8_t *type_code_hash_buf;
+
+  len = UDTSWAP_TYPE_SCRIPT_SIZE;
+  ret = ckb_load_cell_by_field(type_script_buf, &len, 0, index, CKB_SOURCE_OUTPUT, CKB_CELL_FIELD_TYPE);
+  if (ret != CKB_SUCCESS) {
+    return UDTSWAP_SYSCALL_ERROR - ret;
+  }
+  if (len != UDTSWAP_TYPE_SCRIPT_SIZE) {
+    return UDTSWAP_TYPE_SCRIPT_SIZE_NOT_CORRECT_ERROR;
+  }
+  type_code_hash_buf = &type_script_buf[CODE_HASH_START];
+
+  if(memcmp(type_code_hash_buf, udtswap_type_script_code_hash_buf, CODE_HASH_SIZE) != 0) {
+    return CODE_HASH_NOT_MATCH_ERROR;
+  }
+  //udtswap type script code hash check
 
   uint8_t script_hash_buf1[SCRIPT_HASH_SIZE];
   len = SCRIPT_HASH_SIZE;
