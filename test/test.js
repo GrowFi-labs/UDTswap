@@ -3,6 +3,7 @@ const assert = require('assert');
 const udtswap_tx = require('../src/udtswap_tx.js');
 const udtswap_utils = require('../src/udtswap_utils.js');
 const udtswap_consts = require('../src/udtswap_consts.js');
+const fs = require('fs');
 
 describe('#UDTSwap test', function() {
     let ckbAsUDT = {
@@ -141,6 +142,18 @@ describe('#UDTSwap test', function() {
 
     before(function() {
         udtswap_consts.ckb = new udtswap_consts.CKB(udtswap_consts.nodeUrl);
+
+        let obj = fs.readFileSync(__dirname + '/../consts.json', 'utf8');
+        obj = JSON.parse(obj);
+        udtswap_consts.UDTSwapTypeCodeHash = udtswap_consts.ckb.utils.scriptToHash(obj.scripts[0]);
+        udtswap_consts.UDTSwapLockCodeHash = udtswap_consts.ckb.utils.scriptToHash(obj.scripts[1]);
+        udtswap_consts.UDTSwapLiquidityUDTCodeHash = udtswap_consts.ckb.utils.scriptToHash(obj.scripts[2]);
+        udtswap_consts.testUDTType.args = obj.scripts[3].args;
+
+        udtswap_consts.UDTSwapTypeDeps.tx_hash = obj.deps[0];
+        udtswap_consts.UDTSwapLockDeps.tx_hash = obj.deps[1];
+        udtswap_consts.UDTSwapLiquidityUDTDeps.tx_hash = obj.deps[2];
+        udtswap_consts.testUDTDeps.outPoint.txHash = obj.deps[3];
 
         let pk = udtswap_consts.ckb.utils.privateKeyToPublicKey(udtswap_consts.UDT1Owner);
         let pkh = `0x${udtswap_consts.ckb.utils.blake160(pk, 'hex')}`;
