@@ -3,32 +3,33 @@ const udtswap_consts = {
     CKB: require('@nervosnetwork/ckb-sdk-core').default,
     CKBUtils: require('@nervosnetwork/ckb-sdk-utils'),
     request: require('request'),
-    UDTSwapTypeCodeHash : "0xde1197f85227fd76e9c5629277d2ea8702601c27bf8c2513905616173196d985",
-    UDTSwapLockCodeHash : "0xdfa3e9c9cb77091bec6b1eac1a6a309c45d35604c9ccc7718bdf26dc60bfcf94",
-    UDTSwapLiquidityUDTCodeHash : "0x38fdec05b05b48dbf39dbc0959421a659809e07ffddf54bcb6121faecf38119c",
+    UDTSwapTypeCodeHash : null,
+    UDTSwapLockCodeHash : null,
+    UDTSwapLiquidityUDTCodeHash : null,
     UDTSwapTypeDeps : {
-        'tx_hash' : "0x83487fcb7741c830a65e0dfe471e184710cf5f0c3dd414d5a0a82d927080b80b",
+        'tx_hash' : null,
         'index' : "0x0"
     },
     UDTSwapLockDeps : {
-        'tx_hash' : "0xbf04cdd2a766589d213631e0c7477f0392f8deb046003ae51d0e69c2470d3618",
+        'tx_hash' : null,
         'index' : "0x0"
     },
     UDTSwapLiquidityUDTDeps : {
-        'tx_hash' : "0xf30ed39aaf8640c9e920fe8b889b3da8ebc2046621543b570e358dbdee096633",
+        'tx_hash' : null,
         'index' : "0x0"
     },
-    UDT1Owner : '',
-    UDT2Owner : '',
-    skTesting : '',
+    UDT1Owner : null,
+    UDT2Owner : null,
+    skTesting : null,
+
     testUDTType : {
         hashType: 'type',
         codeHash: '0x00000000000000000000000000000000000000000000000000545950455f4944',
-        args: '0x3635a5170f531438534087126a97cafc72316393374aa2f6489ddcd6c469dbca'
+        args: null
     },
     testUDTDeps : {
         outPoint: {
-            txHash: "0xf322318a51793501d76e176bea8c83d394c5c57d3d64de5e1e0d5c148afe5029",
+            txHash: null,
             index: "0x0"
         },
         depType: "code"
@@ -42,8 +43,8 @@ const udtswap_consts = {
     txFeeMax : 10000,
     poolCellCKB : 30000000000,
     ckbLockCellMinimum : 30000000000,
-    nodeUrl: '',
-    sk: '',
+    nodeUrl: 'http://127.0.0.1:8114',
+    sk: null,
     fs: require('fs'),
     util: require('util'),
     readFileAsync: null,

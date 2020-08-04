@@ -1,6 +1,21 @@
 var udtswap_consts = require('./udtswap_consts.js');
+const fs = require('fs');
 
 const udtswap_utils = {
+  writeConsts: function (idx, data) {
+    let obj = fs.readFileSync(__dirname + '/../consts.json', 'utf8');
+    obj = JSON.parse(obj);
+    if(idx==0) { // inputs
+      obj.inputs.push(data);
+    } else if(idx==1) {
+      obj.scripts.push(data);
+    } else if(idx==2) {
+      obj.deps.push(data);
+    }
+    let json = JSON.stringify(obj);
+    fs.writeFileSync(__dirname + '/../consts.json', json);
+  },
+
   sleep: function(t){
     return new Promise(resolve=>setTimeout(resolve,t));
   },

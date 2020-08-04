@@ -1,7 +1,8 @@
 var udtswap_consts = require('./udtswap_consts.js');
 var udtswap_utils = require('./udtswap_utils.js');
+const fs = require('fs');
 
-const deploy_scripts = {
+const deploy_udtswap = {
     init: function() {
         udtswap_consts.ckb = new udtswap_consts.CKB(udtswap_consts.nodeUrl);
         udtswap_consts.pk = udtswap_consts.ckb.utils.privateKeyToPublicKey(udtswap_consts.sk);
@@ -16,14 +17,73 @@ const deploy_scripts = {
         udtswap_consts.readFileAsync = udtswap_consts.util.promisify(udtswap_consts.fs.readFile);
     },
 
-    deploy_type_id_script: async function(scripthexdata, startblock, capacity, fee) {
-        const secp256k1Dep = await udtswap_consts.ckb.loadSecp256k1Dep();
+    get_type_id_args : function (input) {
+        let type_id_hash = udtswap_consts.ckb.utils.blake2b(32, null, null, udtswap_consts.ckb.utils.PERSONAL);
+
+        let outpoint_struct = new Map([['txHash', input.txHash], ['index', udtswap_consts.ckb.utils.toHexInLittleEndian(input.index)]]);
+        let serialized_outpoint = udtswap_consts.ckb.utils.serializeStruct(outpoint_struct);
+        let serialized_since = udtswap_consts.ckb.utils.toHexInLittleEndian("0x0", 8);
+        let input_struct = new Map([['since', serialized_since], ['previousOutput', serialized_outpoint]])
+        let input_serialized = udtswap_consts.ckb.utils.serializeStruct(input_struct);
+
+        type_id_hash.update(udtswap_consts.ckb.utils.hexToBytes(input_serialized));
+        type_id_hash.update(udtswap_consts.ckb.utils.hexToBytes("0x0000000000000000")); //same index with type id output
+        let script_args = `0x${type_id_hash.digest('hex')}`;
+
+        return script_args;
+    },
+
+    get_all_code_hashes : async function (startblock) {
         let unspentCells = await udtswap_consts.ckb.loadCells({
             start: BigInt(startblock),
             lockHash: udtswap_consts.lockHash
         });
 
         unspentCells = unspentCells.filter((unspentCell) => {
+            return unspentCell.type == null;
+        });
+
+        let scripts = [
+            "UDTswap_udt_based",
+            "UDTswap_lock_udt_based",
+            "UDTswap_liquidity_UDT_udt_based",
+            "test_udt"
+        ];
+        let i = 0;
+        while(i<4) {
+            let script_args = deploy_udtswap.get_type_id_args(unspentCells[i].outPoint);
+            let code_hash = udtswap_consts.ckb.utils.scriptToHash({
+                hashType: 'type',
+                codeHash: '0x00000000000000000000000000000000000000000000000000545950455f4944',
+                args: script_args,
+            });
+            let code_hash_to_bytes = udtswap_consts.ckb.utils.hexToBytes(code_hash);
+            udtswap_utils.writeConsts(0, unspentCells[i].outPoint);
+            console.log(scripts[i], code_hash_to_bytes);
+            i+=1;
+        }
+    },
+
+    only_deploy_type_id_script: async function(idx, scripthexdata, startblock, capacity, fee) {
+        const secp256k1Dep = await udtswap_consts.ckb.loadSecp256k1Dep();
+        let unspentCells = await udtswap_consts.ckb.loadCells({
+            start: BigInt(startblock),
+            lockHash: udtswap_consts.lockHash
+        });
+
+        let obj = fs.readFileSync(__dirname + '/../consts.json', 'utf8');
+        obj = JSON.parse(obj);
+
+        unspentCells = unspentCells.filter((unspentCell) => {
+            let i = 0;
+            while(i<4) {
+                if(idx==i) {
+                    i+=1;
+                    continue;
+                }
+                if(unspentCell.outPoint.txHash == obj.inputs[i].txHash && unspentCell.outPoint.index == obj.inputs[i].index) return false;
+                i+=1;
+            }
             return unspentCell.type == null;
         });
 
@@ -43,17 +103,7 @@ const deploy_scripts = {
             outputType: ''
         };
 
-        const type_id_hash = udtswap_consts.ckb.utils.blake2b(32, null, null, udtswap_consts.ckb.utils.PERSONAL);
-
-        const outpoint_struct = new Map([['txHash', rawTransaction.inputs[0].previousOutput.txHash], ['index', udtswap_consts.ckb.utils.toHexInLittleEndian(rawTransaction.inputs[0].previousOutput.index)]]);
-        const serialized_outpoint = udtswap_consts.ckb.utils.serializeStruct(outpoint_struct);
-        const serialized_since = udtswap_consts.ckb.utils.toHexInLittleEndian(rawTransaction.inputs[0].since, 8);
-        const input_struct = new Map([['since', serialized_since], ['previousOutput', serialized_outpoint]])
-        const input_serialized = udtswap_consts.ckb.utils.serializeStruct(input_struct);
-
-        type_id_hash.update(udtswap_consts.ckb.utils.hexToBytes(input_serialized));
-        type_id_hash.update(udtswap_consts.ckb.utils.hexToBytes("0x0000000000000000")); //same index with type id output
-        const script_args = `0x${type_id_hash.digest('hex')}`;
+        let script_args = deploy_udtswap.get_type_id_args(rawTransaction.inputs[0].previousOutput);
 
         rawTransaction.outputs[0].type = {
             hashType: 'type',
@@ -71,110 +121,24 @@ const deploy_scripts = {
         };
     },
 
-    update_type_id_script: async function(scripthexdata, type_script, startblock, capacity, fee) {
-        const secp256k1Dep = await udtswap_consts.ckb.loadSecp256k1Dep();
-        let unspentCells = await udtswap_consts.ckb.loadCells({
-            start: BigInt(startblock),
-            lockHash: udtswap_consts.lockHash
-        });
-
-        unspentCells = unspentCells.filter((unspentCell) => {
-            return ((unspentCell.type == null && unspentCell.outputDataLen == '0x0') || (unspentCell.type != null && unspentCell.type.args == type_script.args));
-        });
-
-        const rawTransaction = udtswap_consts.ckb.generateRawTransaction({
-            fromAddress: udtswap_consts.addr,
-            toAddress: udtswap_consts.addr,
-            capacity: BigInt(capacity),
-            fee: BigInt(fee),
-            safeMode: false,
-            cells: unspentCells,
-            deps: secp256k1Dep,
-        });
-
-        rawTransaction.witnesses[0] = {
-            lock: '',
-            inputType: '',
-            outputType: ''
-        };
-
-        rawTransaction.outputs[0].type = type_script;
-
-        rawTransaction.outputsData[0] = scripthexdata;
-
-        const signedTx = udtswap_consts.ckb.signTransaction(udtswap_consts.sk)(rawTransaction);
-
-        const realTxHash = await udtswap_consts.ckb.rpc.sendTransaction(signedTx, "passthrough");
-        return {
-            txHash: realTxHash,
-            type: rawTransaction.outputs[0].type
-        };
-    },
-
-    deploy_udtswap: async function(udtswap) {
+    only_deploy_udtswap: async function(udtswap) {
         let data = await udtswap_consts.readFileAsync("../../UDTswap_scripts/"+udtswap);
 
         const scripthexdata = udtswap_consts.ckb.utils.bytesToHex(data);
         let capacity = 7000000000000;
         let fee = 70000;
+        let idx = 0;
         if(udtswap=="UDTswap_lock_udt_based") {
             capacity = 1200000000000;
             fee = 12000;
+            idx = 1;
         } else if(udtswap=="UDTswap_liquidity_UDT_udt_based" || udtswap=="test_udt") {
             capacity = 4300000000000;
             fee = 43000;
+            if(udtswap=="UDTswap_liquidity_UDT_udt_based") idx = 2;
+            else idx = 3;
         }
-        return await deploy_scripts.deploy_type_id_script(scripthexdata, 0, capacity, fee);
-    },
-
-    update_udtswap: async function(udtswap) {
-        let data = await udtswap_consts.readFileAsync("../../UDTswap_scripts/"+udtswap);
-
-        const udtswap_type = {
-            args: "0x29ac397f886d4b1e43e95bba8cbf8ef001dcd2c7ddd4be40006657077f695048",
-            codeHash: "0x00000000000000000000000000000000000000000000000000545950455f4944",
-            hashType: 'type'
-        };
-
-        const udtswap_liquidity_udt = {
-            args: "0x99fcef845821e3b7d07ffcb506c42248a8e058c2b4e9739feb115e018632df31",
-            codeHash: "0x00000000000000000000000000000000000000000000000000545950455f4944",
-            hashType: "type"
-        };
-
-        const udtswap_lock = {
-            args: "0xf8cd399bbf921f269befd1587b23c37ea70437611d8d66c535ee8cb0d5662b4b",
-            codeHash: "0x00000000000000000000000000000000000000000000000000545950455f4944",
-            hashType: "type"
-        };
-
-        const test_udt = {
-            args : "0x3635a5170f531438534087126a97cafc72316393374aa2f6489ddcd6c469dbca",
-            codeHash : "0x00000000000000000000000000000000000000000000000000545950455f4944",
-            hashType : "type"
-        };
-
-        const scripthexdata = udtswap_consts.ckb.utils.bytesToHex(data);
-
-        let type_script = udtswap_type;
-        let startblock = 0;
-        let capacity = 7000000000000;
-        let fee = 70000;
-        if(udtswap == "UDTswap_liquidity_UDT_udt_based" || udtswap == "test_udt") {
-            if(udtswap == "test_udt") {
-                type_script = test_udt;
-            } else {
-                type_script = udtswap_liquidity_udt;
-            }
-            capacity = 4300000000000;
-            fee = 43000;
-        } else if(udtswap == "UDTswap_lock_udt_based") {
-            type_script = udtswap_lock;
-            capacity = 1200000000000;
-            fee = 12000;
-        }
-
-        return await deploy_scripts.update_type_id_script(scripthexdata, type_script, startblock, capacity, fee);
+        return await deploy_udtswap.only_deploy_type_id_script(idx, scripthexdata, 0, capacity, fee);
     },
 
     mintUDT: async function(sk) {
@@ -216,6 +180,11 @@ const deploy_scripts = {
             outputType: ''
         };
 
+        let obj = fs.readFileSync(__dirname + '/../consts.json', 'utf8');
+        obj = JSON.parse(obj);
+        udtswap_consts.testUDTType.args = obj.scripts[3].args;
+        udtswap_consts.testUDTDeps.outPoint.txHash = obj.deps[3];
+
         rawTransaction.cellDeps.push(udtswap_consts.testUDTDeps);
 
         const testUDTScript = udtswap_consts.testUDTType;
@@ -238,5 +207,5 @@ const deploy_scripts = {
 };
 
 
-module.exports = deploy_scripts;
+module.exports = deploy_udtswap;
 
