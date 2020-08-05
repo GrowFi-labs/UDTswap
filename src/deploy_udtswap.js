@@ -27,7 +27,7 @@ const deploy_udtswap = {
         let input_serialized = udtswap_consts.ckb.utils.serializeStruct(input_struct);
 
         type_id_hash.update(udtswap_consts.ckb.utils.hexToBytes(input_serialized));
-        type_id_hash.update(udtswap_consts.ckb.utils.hexToBytes("0x0000000000000000")); //same index with type id output
+        type_id_hash.update(udtswap_consts.ckb.utils.hexToBytes("0x0000000000000000"));
         let script_args = `0x${type_id_hash.digest('hex')}`;
 
         return script_args;
@@ -43,12 +43,6 @@ const deploy_udtswap = {
             return unspentCell.type == null;
         });
 
-        let scripts = [
-            "UDTswap_udt_based",
-            "UDTswap_lock_udt_based",
-            "UDTswap_liquidity_UDT_udt_based",
-            "test_udt"
-        ];
         let i = 0;
         while(i<4) {
             let script_args = deploy_udtswap.get_type_id_args(unspentCells[i].outPoint);
@@ -59,7 +53,7 @@ const deploy_udtswap = {
             });
             let code_hash_to_bytes = udtswap_consts.ckb.utils.hexToBytes(code_hash);
             udtswap_utils.writeConsts(0, unspentCells[i].outPoint);
-            console.log(scripts[i], code_hash_to_bytes);
+            udtswap_utils.writeConsts(3, code_hash_to_bytes);
             i+=1;
         }
     },

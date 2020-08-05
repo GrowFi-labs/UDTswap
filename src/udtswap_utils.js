@@ -5,12 +5,15 @@ const udtswap_utils = {
   writeConsts: function (idx, data) {
     let obj = fs.readFileSync(__dirname + '/../consts.json', 'utf8');
     obj = JSON.parse(obj);
-    if(idx==0) { // inputs
+    if(idx==0) {
       obj.inputs.push(data);
     } else if(idx==1) {
       obj.scripts.push(data);
     } else if(idx==2) {
       obj.deps.push(data);
+    } else if(idx==3) {
+      let obj_hash = fs.readFileSync(__dirname + '/../hash.txt', 'utf8');
+      fs.writeFileSync(__dirname + '/../hash.txt', obj_hash+data.toString()+'\n');
     }
     let json = JSON.stringify(obj);
     fs.writeFileSync(__dirname + '/../consts.json', json);
