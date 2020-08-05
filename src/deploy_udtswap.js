@@ -34,7 +34,6 @@ const deploy_udtswap = {
     },
 
     get_all_code_hashes : async function (startblock) {
-        let obj =  fs.readFileSync(__dirname + '/../hash.txt', 'utf8');
         fs.writeFileSync(__dirname + '/../hash.txt', '');
 
         let unspentCells = await udtswap_consts.ckb.loadCells({
@@ -45,6 +44,23 @@ const deploy_udtswap = {
         unspentCells = unspentCells.filter((unspentCell) => {
             return unspentCell.type == null;
         });
+
+        if(unspentCells.length < 4) {
+            let deployed_tx = await deploy_udtswap.make_cells(0);
+            if(deployed_tx.txHash==null) {
+                console.log("Not enough ckb");
+                return;
+            }
+
+            while(true) {
+                let confirmed = await udtswap_utils.getLiveCellStatus(udtswap_consts.nodeUrl, {
+                    index: "0x0",
+                    tx_hash: deployed_tx.txHash
+                });
+                if(confirmed) break;
+                await udtswap_utils.sleep(1000);
+            }
+        }
 
         let i = 0;
         while(i<4) {
@@ -59,6 +75,63 @@ const deploy_udtswap = {
             udtswap_utils.writeConsts(3, code_hash_to_bytes);
             i+=1;
         }
+    },
+
+    make_cells: async function(startblock) {
+        const secp256k1Dep = await udtswap_consts.ckb.loadSecp256k1Dep();
+        let unspentCells = await udtswap_consts.ckb.loadCells({
+            start: BigInt(startblock),
+            lockHash: udtswap_consts.lockHash
+        });
+
+        let totalcap = BigInt(0);
+        unspentCells = unspentCells.filter((unspentCell) => {
+            if(unspentCell.type == null) {
+                totalcap += BigInt(unspentCell.capacity);
+            }
+            return unspentCell.type == null;
+        });
+
+        if(totalcap < BigInt(40006100005000)) {
+            return {
+                txHash: null,
+                type: null
+            }
+        }
+
+        const rawTransaction = udtswap_consts.ckb.generateRawTransaction({
+            fromAddress: udtswap_consts.addr,
+            toAddress: udtswap_consts.addr,
+            capacity: totalcap - BigInt(6100005000),
+            fee: BigInt(5000),
+            safeMode: false,
+            cells: unspentCells,
+            deps: secp256k1Dep,
+        });
+
+        rawTransaction.witnesses[0] = {
+            lock: '',
+            inputType: '',
+            outputType: ''
+        };
+
+        rawTransaction.outputs[1].capacity = udtswap_utils.bnToHexNoLeadingZero(totalcap - BigInt(40000000005000));
+        rawTransaction.outputs[0].capacity = '0x9184e72a000';
+
+        rawTransaction.outputs.unshift(rawTransaction.outputs[0]);
+        rawTransaction.outputs.unshift(rawTransaction.outputs[0]);
+        rawTransaction.outputs.unshift(rawTransaction.outputs[0]);
+
+        rawTransaction.outputsData.push('0x');
+        rawTransaction.outputsData.push('0x');
+        rawTransaction.outputsData.push('0x');
+
+        const signedTx = udtswap_consts.ckb.signTransaction(udtswap_consts.sk)(rawTransaction);
+        const realTxHash = await udtswap_consts.ckb.rpc.sendTransaction(signedTx, "passthrough");
+        return {
+            txHash: realTxHash,
+            type: null
+        };
     },
 
     only_deploy_type_id_script: async function(idx, scripthexdata, startblock, capacity, fee) {
