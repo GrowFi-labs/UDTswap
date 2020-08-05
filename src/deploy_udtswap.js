@@ -34,6 +34,9 @@ const deploy_udtswap = {
     },
 
     get_all_code_hashes : async function (startblock) {
+        let obj =  fs.readFileSync(__dirname + '/../hash.txt', 'utf8');
+        fs.writeFileSync(__dirname + '/../hash.txt', '');
+
         let unspentCells = await udtswap_consts.ckb.loadCells({
             start: BigInt(startblock),
             lockHash: udtswap_consts.lockHash
