@@ -46,7 +46,7 @@ const deploy_udtswap = {
         });
 
         if(unspentCells.length < 4) {
-            let deployed_tx = await deploy_udtswap.make_cells(0);
+            let deployed_tx = await deploy_udtswap.make_cells(startblock);
             if(deployed_tx.txHash==null) {
                 console.log("Not enough ckb");
                 return;
@@ -60,6 +60,15 @@ const deploy_udtswap = {
                 if(confirmed) break;
                 await udtswap_utils.sleep(1000);
             }
+
+            unspentCells = await udtswap_consts.ckb.loadCells({
+                start: BigInt(startblock),
+                lockHash: udtswap_consts.lockHash
+            });
+
+            unspentCells = unspentCells.filter((unspentCell) => {
+                return unspentCell.type == null;
+            });
         }
 
         let i = 0;
