@@ -41,9 +41,19 @@ const deploy_udtswap = {
             lockHash: udtswap_consts.lockHash
         });
 
+        let totalcap = BigInt(0);
+
         unspentCells = unspentCells.filter((unspentCell) => {
+            if(unspentCell.type == null) {
+                totalcap += BigInt(unspentCell.capacity);
+            }
             return unspentCell.type == null;
         });
+
+        if(totalcap < BigInt(40000000000000)) {
+            console.log("Not enough ckb");
+            return;
+        }
 
         if(unspentCells.length < 4) {
             let deployed_tx = await deploy_udtswap.make_cells(startblock);
