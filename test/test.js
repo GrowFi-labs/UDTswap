@@ -80,6 +80,8 @@ describe('#UDTSwap test', function() {
     let currentPoolArr = [];
     let isRevArr = [];
 
+    let maxtime = 90*1000;
+
     function addPool(txAmount1, txAmount2, txAmount3, CurrentUDT1, CurrentUDT2, CurrentPool, isRev) {
         tx_amount1_arr.push(txAmount1);
         tx_amount2_arr.push(txAmount2);
@@ -217,7 +219,7 @@ describe('#UDTSwap test', function() {
     });
 
     it('# UDT / UDT Pool creation', async function() {
-        this.timeout(60*1000);
+        this.timeout(maxtime);
 
         tx_amount1 = currentUDT1.udt_typehash;
         tx_amount2 = currentUDT2.udt_typehash;
@@ -238,7 +240,7 @@ describe('#UDTSwap test', function() {
     });
 
     it('# UDT / UDT Pool add liquidity initial', async function() {
-        this.timeout(60*1000);
+        this.timeout(maxtime);
 
         tx_amount1 = '100000000';
         tx_amount2 = '500000000';
@@ -257,7 +259,7 @@ describe('#UDTSwap test', function() {
     });
 
     it('# UDT / UDT Pool add liquidity', async function() {
-        this.timeout(60*1000);
+        this.timeout(maxtime);
 
         tx_amount1 = '100000000';
         let liquidity = udtswap_utils.calculateAddLiquidityUDT2Amount(currentPool, tx_amount1);
@@ -277,7 +279,7 @@ describe('#UDTSwap test', function() {
     });
 
     it('# UDT / UDT Pool swap', async function() {
-        this.timeout(60*1000);
+        this.timeout(maxtime);
 
         tx_amount1 = '1234567';
         tx_amount2 = udtswap_utils.SwapOutput(currentPool, tx_amount1, is_rev);
@@ -294,7 +296,7 @@ describe('#UDTSwap test', function() {
     });
 
     it('# UDT / UDT Pool swap reverse', async function() {
-        this.timeout(60*1000);
+        this.timeout(maxtime);
         
         is_rev = true;
         tx_amount1 = '1234567';
@@ -312,7 +314,7 @@ describe('#UDTSwap test', function() {
     });
 
     it('# UDT / UDT Pool remove liquidity', async function() {
-        this.timeout(60*1000);
+        this.timeout(maxtime);
 
         tx_amount1 = '1234567';
         let liquidity = udtswap_utils.calculateRemoveLiquidityAmount(currentPool, tx_amount1);
@@ -332,7 +334,7 @@ describe('#UDTSwap test', function() {
     });
 
     it('# CKB / UDT Pool creation', async function() {
-        this.timeout(60*1000);
+        this.timeout(maxtime);
 
         tx_amount1 = ckbAsUDT.udt_typehash;
         tx_amount2 = currentUDT2.udt_typehash;
@@ -353,7 +355,7 @@ describe('#UDTSwap test', function() {
     });
 
     it('# CKB / UDT Pool add liquidity initial', async function() {
-        this.timeout(60*1000);
+        this.timeout(maxtime);
 
         tx_amount1 = '100000000000';
         tx_amount2 = '500000000';
@@ -372,7 +374,7 @@ describe('#UDTSwap test', function() {
     });
 
     it('# CKB / UDT Pool add liquidity', async function() {
-        this.timeout(60*1000);
+        this.timeout(maxtime);
 
         tx_amount1 = '100000000';
         let liquidity = udtswap_utils.calculateAddLiquidityUDT2Amount(currentPoolCKB, tx_amount1);
@@ -392,7 +394,7 @@ describe('#UDTSwap test', function() {
     });
 
     it('# CKB / UDT Pool swap', async function() {
-        this.timeout(60*1000);
+        this.timeout(maxtime);
 
         tx_amount1 = '1234567';
         tx_amount2 = udtswap_utils.SwapOutput(currentPoolCKB, tx_amount1, is_rev);
@@ -409,7 +411,7 @@ describe('#UDTSwap test', function() {
     });
 
     it('# CKB / UDT Pool swap reverse', async function() {
-        this.timeout(60*1000);
+        this.timeout(maxtime);
 
         is_rev = true;
         tx_amount1 = '200000000';
@@ -427,7 +429,7 @@ describe('#UDTSwap test', function() {
     });
 
     it('# CKB / UDT Pool remove liquidity', async function() {
-        this.timeout(60*1000);
+        this.timeout(maxtime);
 
         tx_amount1 = '50000000000';
         let liquidity = udtswap_utils.calculateRemoveLiquidityAmount(currentPoolCKB, tx_amount1);
@@ -447,7 +449,7 @@ describe('#UDTSwap test', function() {
     });
 
     it('# Multiple Pool swap', async function() {
-        this.timeout(60*1000);
+        this.timeout(maxtime);
 
         tx_amount1 = '1234567';
         tx_amount2 = udtswap_utils.SwapOutput(currentPoolCKB, tx_amount1, is_rev);
