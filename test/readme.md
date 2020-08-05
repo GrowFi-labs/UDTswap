@@ -21,7 +21,7 @@
 2. Change `sk`,`UDT1Owner`, `UDT2Owner`, `skTesting` to deploying account's secret key in `/src/udtswap_consts.js`
 3. Change `nodeUrl` to local testnet node rpc endpoint in `/src/udtswap_consts.js`
 4. `node deploy_scripts 0` in `/test/deploy`
-5. Copy and paste the results of 4. in `UDTswap_scripts/udtswap_common.h` from line 80 to line 92
+5. `./hash.sh` in root directory
 6. Compile scripts
 7. `node deploy_scripts 1` in `/test/deploy`
 
