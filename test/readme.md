@@ -18,12 +18,30 @@
 
 ### Deploy
 1. `npm install`
-2. Change `sk`,`UDT1Owner`, `UDT2Owner`, `skTesting` to deploying account's secret key in `/src/udtswap_consts.js`
-3. Change `nodeUrl` to local testnet node rpc endpoint in `/src/udtswap_consts.js`
-4. `node deploy_scripts 0` in `/test/deploy`
+2. Change `sk`,`UDT1Owner`, `UDT2Owner`, `skTesting` to deploying account's secret key in `/test/consts.js`
+3. Change `nodeUrl` to local testnet node rpc endpoint in `/test/consts.js`
+4. `node ./test/deploy/exec 0` in root directory
 5. `./hash.sh` in root directory
 6. Compile scripts
-7. `node deploy_scripts 1` in `/test/deploy`
+7. `node ./test/deploy/exec 1` in root directory
 
 ### Test
 `npm test` in root directory
+
+- `deploy`
+  - `deploy.js` 
+    - script for deploying UDTswap script.
+  - `exec.js`
+    - script for executing deploy.
+- `tx`
+  - `txBuilder.js` 
+    - script for making UDTswap's transactions.
+  - `cellBuilder.js`
+    - script for making UDTswap's transaction cells.
+- `consts.js`
+  - constants for UDTswap scripts.
+- `utils.js`
+  - script for utility functions.
+  
+- Codes above are just for test, not for production. You may use making UDTswap transactions similar to above or any other way.
+Especially for getting live cells and signing and exposing secret keys and CKB node RPC endpoint, do not use above in production. 

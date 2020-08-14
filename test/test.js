@@ -1,80 +1,79 @@
 const assert = require('assert');
 
-const udtswap_tx = require('../src/udtswap_tx.js');
-const udtswap_utils = require('../src/udtswap_utils.js');
-const udtswap_consts = require('../src/udtswap_consts.js');
-const fs = require('fs');
+const txBuilder = require('./tx/txBuilder.js');
+const utils = require('./utils.js');
+const consts = require('./consts.js');
 
 describe('#UDTSwap test', function() {
     let ckbAsUDT = {
         args: "0x",
-        code_hash: udtswap_consts.ckbTypeHash,
-        data_without_amount: "",
-        hash_type: "type",
-        udt_deps_dep_type: "code",
-        udt_deps_tx_hash: "0x",
-        udt_deps_tx_index: -1,
-        udt_typehash: udtswap_consts.ckbTypeHash,
+        codeHash: consts.ckbTypeHash,
+        dataWithoutAmount: "",
+        hashType: "type",
+        udtDepsDepType: "code",
+        udtDepsTxHash: "0x",
+        udtDepsTxIndex: null,
+        udtTypeHash: consts.ckbTypeHash,
     };
 
     let currentUDT1 = {
         args: null,
-        code_hash: null,
-        data_without_amount: "",
-        hash_type: "type",
-        udt_deps_dep_type: "code",
-        udt_deps_tx_hash: null,
-        udt_deps_tx_index: 0,
-        udt_typehash: null,
+        codeHash: null,
+        dataWithoutAmount: "",
+        hashType: "type",
+        udtDepsDepType: "code",
+        udtDepsTxHash: null,
+        udtDepsTxIndex: "0x0",
+        udtTypeHash: null,
     };
 
     let currentUDT2 = {
         args: null,
-        code_hash: null,
-        data_without_amount: "",
-        hash_type: "type",
-        udt_deps_dep_type: "code",
-        udt_deps_tx_hash: null,
-        udt_deps_tx_index: 0,
-        udt_typehash: null,
+        codeHash: null,
+        dataWithoutAmount: "",
+        hashType: "type",
+        udtDepsDepType: "code",
+        udtDepsTxHash: null,
+        udtDepsTxIndex: "0x0",
+        udtTypeHash: null,
     };
 
     let currentPoolCKB = {
-        live_tx_hash: null,
-        live_tx_index: 0,
-        total_liquidity: null,
-        tx_input_0: null,
-        udt1_actual_reserve: null,
-        udt1_reserve: null,
-        udt1_typehash: null,
-        udt2_actual_reserve: null,
-        udt2_reserve: null,
-        udt2_typehash: null,
+        liveTxHash: null,
+        liveTxIndex: 0,
+        totalLiquidity: null,
+        poolIdentifier: null,
+        udt1ActualReserve: null,
+        udt1Reserve: null,
+        udt1TypeHash: null,
+        udt2ActualReserve: null,
+        udt2Reserve: null,
+        udt2TypeHash: null,
     };
 
     let currentPool = {
-        live_tx_hash: null,
-        live_tx_index: 0,
-        total_liquidity: null,
-        tx_input_0: null,
-        udt1_actual_reserve: null,
-        udt1_reserve: null,
-        udt1_typehash: null,
-        udt2_actual_reserve: null,
-        udt2_reserve: null,
-        udt2_typehash: null,
+        liveTxHash: null,
+        liveTxIndex: 0,
+        totalLiquidity: null,
+        poolIdentifier: null,
+        udt1ActualReserve: null,
+        udt1Reserve: null,
+        udt1TypeHash: null,
+        udt2ActualReserve: null,
+        udt2Reserve: null,
+        udt2TypeHash: null,
     };
 
-    let tx_amount1 = null;
-    let tx_amount2 = null;
-    let tx_amount3 = null;
-    let secret_key = udtswap_consts.skTesting;
-    let to_addr = null;
-    let is_rev = false;
+    let udt1Amount = null;
+    let udt2Amount = null;
+    let liquidityUDTAmount = null;
+    let secretKey = consts.skTesting;
+    let toAddr = null;
+    let isRev = false;
 
-    let tx_amount1_arr = [];
-    let tx_amount2_arr = [];
-    let tx_amount3_arr = [];
+    let udt1AmountArr = [];
+    let udt2AmountArr = [];
+    let liquidityUDTAmountArr = [];
     let currentUDT1Arr = [];
     let currentUDT2Arr = [];
     let currentPoolArr = [];
@@ -82,10 +81,18 @@ describe('#UDTSwap test', function() {
 
     let maxtime = 90*1000;
 
-    function addPool(txAmount1, txAmount2, txAmount3, CurrentUDT1, CurrentUDT2, CurrentPool, isRev) {
-        tx_amount1_arr.push(txAmount1);
-        tx_amount2_arr.push(txAmount2);
-        tx_amount3_arr.push(txAmount3);
+    function addPool(
+        udt1Amount,
+        udt2Amount,
+        liquidityUDTAmount,
+        CurrentUDT1,
+        CurrentUDT2,
+        CurrentPool,
+        isRev
+    ) {
+        udt1AmountArr.push(udt1Amount);
+        udt2AmountArr.push(udt2Amount);
+        liquidityUDTAmountArr.push(liquidityUDTAmount);
         currentUDT1Arr.push(CurrentUDT1);
         currentUDT2Arr.push(CurrentUDT2);
         currentPoolArr.push(CurrentPool);
@@ -93,109 +100,122 @@ describe('#UDTSwap test', function() {
     }
 
     async function sendTransaction(idx) {
-        return await udtswap_tx.sendTransaction(
+        return await txBuilder.sendTransaction(
             idx,
-            udtswap_consts.nodeUrl,
-            '0x0',
-            secret_key,
-            tx_amount1_arr,
-            tx_amount2_arr,
-            tx_amount3_arr,
+            secretKey,
+            udt1AmountArr,
+            udt2AmountArr,
+            liquidityUDTAmountArr,
             currentUDT1Arr,
             currentUDT2Arr,
             currentPoolArr,
             isRevArr,
-            to_addr
+            toAddr
         );
     }
 
     function getTransactionRes(transaction, idx) {
-        const outputsData = transaction.outputs_data;
+        const outputsData = transaction.outputsData;
         const UDTSwapCellOutputData = outputsData[idx];
 
-        const afterUDT1Reserve = BigInt(udtswap_utils.changeEndianness(UDTSwapCellOutputData.substr(0, 34)));
-        const afterUDT2Reserve = BigInt(udtswap_utils.changeEndianness('0x'+UDTSwapCellOutputData.substr(34, 32)));
-        const afterTotalLiquidity = BigInt(udtswap_utils.changeEndianness('0x'+UDTSwapCellOutputData.substr(66)));
+        const afterUDT1Reserve = BigInt(utils.changeEndianness(
+            UDTSwapCellOutputData.substr(0, 34)
+        ));
+        const afterUDT2Reserve = BigInt(utils.changeEndianness(
+            '0x'+UDTSwapCellOutputData.substr(34, 32)
+        ));
+        const afterTotalLiquidity = BigInt(utils.changeEndianness(
+            '0x'+UDTSwapCellOutputData.substr(66)
+        ));
 
         return {
-            udt1_reserve: afterUDT1Reserve,
-            udt2_reserve: afterUDT2Reserve,
-            total_liquidity: afterTotalLiquidity
+            udt1Reserve: afterUDT1Reserve,
+            udt2Reserve: afterUDT2Reserve,
+            totalLiquidity: afterTotalLiquidity
         }
     }
 
     async function checkAmounts(CurrentPool, txHash, idx) {
-        let confirmed = false;
+        let confirmed;
         while(true) {
-            confirmed = await udtswap_utils.getLiveCellStatus(udtswap_consts.nodeUrl, {
-                index: "0x0",
-                tx_hash: txHash
-            });
-            if(confirmed) break;
-            await udtswap_utils.sleep(1000);
+            confirmed = await consts.ckb.rpc.getLiveCell({
+                txHash,
+                index: "0x0"
+            }, false);
+            if(confirmed.status === 'live') break;
+            await utils.sleep(1000);
         }
 
-        let txRes = await udtswap_utils.getTransactionRPC(udtswap_consts.nodeUrl, txHash);
+        let txRes = await consts.ckb.rpc.getTransaction(txHash);
         let poolAmounts = getTransactionRes(txRes.transaction, idx);
-        assert.equal(String(CurrentPool.udt1_reserve), String(poolAmounts.udt1_reserve));
-        assert.equal(String(CurrentPool.udt2_reserve), String(poolAmounts.udt2_reserve));
-        assert.equal(String(CurrentPool.total_liquidity), String(poolAmounts.total_liquidity));
+        assert.strictEqual(
+            String(CurrentPool.udt1Reserve),
+            String(poolAmounts.udt1Reserve)
+        );
+        assert.strictEqual(
+            String(CurrentPool.udt2Reserve),
+            String(poolAmounts.udt2Reserve)
+        );
+        assert.strictEqual(
+            String(CurrentPool.totalLiquidity),
+            String(poolAmounts.totalLiquidity)
+        );
     }
 
     before(function() {
-        udtswap_consts.ckb = new udtswap_consts.CKB(udtswap_consts.nodeUrl);
+        consts.ckb = new consts.CKB(consts.nodeUrl);
 
-        let obj = fs.readFileSync(__dirname + '/../consts.json', 'utf8');
+        let obj = consts.fs.readFileSync(__dirname + '/../consts.json', 'utf8');
         obj = JSON.parse(obj);
-        udtswap_consts.UDTSwapTypeCodeHash = udtswap_consts.ckb.utils.scriptToHash(obj.scripts[0]);
-        udtswap_consts.UDTSwapLockCodeHash = udtswap_consts.ckb.utils.scriptToHash(obj.scripts[1]);
-        udtswap_consts.UDTSwapLiquidityUDTCodeHash = udtswap_consts.ckb.utils.scriptToHash(obj.scripts[2]);
-        udtswap_consts.testUDTType.args = obj.scripts[3].args;
+        consts.UDTSwapTypeCodeHash = consts.ckb.utils.scriptToHash(obj.scripts[0]);
+        consts.UDTSwapLockCodeHash = consts.ckb.utils.scriptToHash(obj.scripts[1]);
+        consts.UDTSwapLiquidityUDTCodeHash = consts.ckb.utils.scriptToHash(obj.scripts[2]);
+        consts.testUDTType.args = obj.scripts[3].args;
 
-        udtswap_consts.UDTSwapTypeDeps.tx_hash = obj.deps[0];
-        udtswap_consts.UDTSwapLockDeps.tx_hash = obj.deps[1];
-        udtswap_consts.UDTSwapLiquidityUDTDeps.tx_hash = obj.deps[2];
-        udtswap_consts.testUDTDeps.outPoint.txHash = obj.deps[3];
+        consts.UDTSwapTypeDeps.txHash = obj.deps[0];
+        consts.UDTSwapLockDeps.txHash = obj.deps[1];
+        consts.UDTSwapLiquidityUDTDeps.txHash = obj.deps[2];
+        consts.testUDTDeps.outPoint.txHash = obj.deps[3];
 
-        let pk = udtswap_consts.ckb.utils.privateKeyToPublicKey(udtswap_consts.UDT1Owner);
-        let pkh = `0x${udtswap_consts.ckb.utils.blake160(pk, 'hex')}`;
+        let pk = consts.ckb.utils.privateKeyToPublicKey(consts.UDT1Owner);
+        let pkh = `0x${consts.ckb.utils.blake160(pk, 'hex')}`;
         let lockScript = {
             hashType: 'type',
-            codeHash: udtswap_consts.nervosDefaultLockCodeHash,
+            codeHash: consts.nervosDefaultLockCodeHash,
             args: pkh,
         };
-        let lockHash = udtswap_consts.ckb.utils.scriptToHash(lockScript);
+        let lockHash = consts.ckb.utils.scriptToHash(lockScript);
 
         currentUDT1.args = lockHash;
-        currentUDT1.code_hash = udtswap_consts.ckb.utils.scriptToHash(udtswap_consts.testUDTType);
-        currentUDT1.udt_deps_tx_hash = udtswap_consts.testUDTDeps.outPoint.txHash;
-        currentUDT1.udt_typehash = udtswap_consts.ckb.utils.scriptToHash({
-            hashType: currentUDT1.hash_type,
-            codeHash: currentUDT1.code_hash,
+        currentUDT1.codeHash = consts.ckb.utils.scriptToHash(consts.testUDTType);
+        currentUDT1.udtDepsTxHash = consts.testUDTDeps.outPoint.txHash;
+        currentUDT1.udtTypeHash = consts.ckb.utils.scriptToHash({
+            hashType: currentUDT1.hashType,
+            codeHash: currentUDT1.codeHash,
             args: currentUDT1.args,
         });
 
 
 
-        pk = udtswap_consts.ckb.utils.privateKeyToPublicKey(udtswap_consts.UDT2Owner);
-        pkh = `0x${udtswap_consts.ckb.utils.blake160(pk, 'hex')}`;
+        pk = consts.ckb.utils.privateKeyToPublicKey(consts.UDT2Owner);
+        pkh = `0x${consts.ckb.utils.blake160(pk, 'hex')}`;
         lockScript = {
             hashType: 'type',
-            codeHash: udtswap_consts.nervosDefaultLockCodeHash,
+            codeHash: consts.nervosDefaultLockCodeHash,
             args: pkh,
         };
-        lockHash = udtswap_consts.ckb.utils.scriptToHash(lockScript);
+        lockHash = consts.ckb.utils.scriptToHash(lockScript);
 
         currentUDT2.args = lockHash;
-        currentUDT2.code_hash = udtswap_consts.ckb.utils.scriptToHash(udtswap_consts.testUDTType);
-        currentUDT2.udt_deps_tx_hash = udtswap_consts.testUDTDeps.outPoint.txHash;
-        currentUDT2.udt_typehash = udtswap_consts.ckb.utils.scriptToHash({
-            hashType: currentUDT2.hash_type,
-            codeHash: currentUDT2.code_hash,
+        currentUDT2.codeHash = consts.ckb.utils.scriptToHash(consts.testUDTType);
+        currentUDT2.udtDepsTxHash = consts.testUDTDeps.outPoint.txHash;
+        currentUDT2.udtTypeHash = consts.ckb.utils.scriptToHash({
+            hashType: currentUDT2.hashType,
+            codeHash: currentUDT2.codeHash,
             args: currentUDT2.args,
         });
 
-        if(BigInt(currentUDT1.udt_typehash)>=BigInt(currentUDT2.udt_typehash)) {
+        if(BigInt(currentUDT1.udtTypeHash)>=BigInt(currentUDT2.udtTypeHash)) {
             let temp = currentUDT1;
             currentUDT1 = currentUDT2;
             currentUDT2 = temp;
@@ -203,15 +223,15 @@ describe('#UDTSwap test', function() {
     });
 
     afterEach(async function() {
-        tx_amount1 = null;
-        tx_amount2 = null;
-        tx_amount3 = null;
-        to_addr = null;
-        is_rev = false;
+        udt1Amount = null;
+        udt2Amount = null;
+        liquidityUDTAmount = null;
+        toAddr = null;
+        isRev = false;
 
-        tx_amount1_arr = [];
-        tx_amount2_arr = [];
-        tx_amount3_arr = [];
+        udt1AmountArr = [];
+        udt2AmountArr = [];
+        liquidityUDTAmountArr = [];
         currentUDT1Arr = [];
         currentUDT2Arr = [];
         currentPoolArr = [];
@@ -221,264 +241,464 @@ describe('#UDTSwap test', function() {
     it('# UDT / UDT Pool creation', async function() {
         this.timeout(maxtime);
 
-        tx_amount1 = currentUDT1.udt_typehash;
-        tx_amount2 = currentUDT2.udt_typehash;
-        addPool(tx_amount1, tx_amount2, tx_amount3, currentUDT1, currentUDT2, '', is_rev);
+        addPool(
+            udt1Amount,
+            udt2Amount,
+            liquidityUDTAmount,
+            currentUDT1,
+            currentUDT2,
+            '',
+            isRev
+        );
 
         let result = await sendTransaction(3);
-        currentPool.tx_input_0 = result.inputSerialized;
-        currentPool.live_tx_hash = result.TxHash;
-        currentPool.total_liquidity = 0;
-        currentPool.udt1_typehash = currentUDT1.udt_typehash;
-        currentPool.udt2_typehash = currentUDT2.udt_typehash;
-        currentPool.udt1_reserve = udtswap_consts.udtMinimum;
-        currentPool.udt2_reserve = udtswap_consts.udtMinimum;
-        currentPool.udt1_actual_reserve = '0';
-        currentPool.udt2_actual_reserve = '0';
+        currentPool.poolIdentifier = result.inputSerialized;
+        currentPool.liveTxHash = result.TxHash;
+        currentPool.totalLiquidity = BigInt(0);
+        currentPool.udt1TypeHash = currentUDT1.udtTypeHash;
+        currentPool.udt2TypeHash = currentUDT2.udtTypeHash;
+        currentPool.udt1Reserve = BigInt(consts.udtMinimum);
+        currentPool.udt2Reserve = BigInt(consts.udtMinimum);
+        currentPool.udt1ActualReserve = BigInt(0);
+        currentPool.udt2ActualReserve = BigInt(0);
 
-        await checkAmounts(currentPool, result.TxHash, 0);
+        await checkAmounts(
+            currentPool,
+            result.TxHash,
+            0
+        );
     });
 
     it('# UDT / UDT Pool add liquidity initial', async function() {
         this.timeout(maxtime);
 
-        tx_amount1 = '100000000';
-        tx_amount2 = '500000000';
-        tx_amount3 = '100000000';
-        addPool(tx_amount1, tx_amount2, tx_amount3, currentUDT1, currentUDT2, currentPool, is_rev);
+        udt1Amount = BigInt(100000000);
+        udt2Amount = BigInt(500000000);
+        liquidityUDTAmount = BigInt(100000000);
+        addPool(
+            udt1Amount,
+            udt2Amount,
+            liquidityUDTAmount,
+            currentUDT1,
+            currentUDT2,
+            currentPool,
+            isRev
+        );
 
         let result = await sendTransaction(1);
-        currentPool.live_tx_hash = result.TxHash;
-        currentPool.total_liquidity = String(BigInt(tx_amount3));
-        currentPool.udt1_actual_reserve = String(BigInt(tx_amount1));
-        currentPool.udt2_actual_reserve = String(BigInt(tx_amount2));
-        currentPool.udt1_reserve = String(BigInt(currentPool.udt1_reserve)+BigInt(tx_amount1));
-        currentPool.udt2_reserve = String(BigInt(currentPool.udt2_reserve)+BigInt(tx_amount2));
+        currentPool.liveTxHash = result.TxHash;
+        currentPool.totalLiquidity = liquidityUDTAmount;
+        currentPool.udt1ActualReserve = udt1Amount;
+        currentPool.udt2ActualReserve = udt2Amount;
+        currentPool.udt1Reserve = currentPool.udt1Reserve + udt1Amount;
+        currentPool.udt2Reserve = currentPool.udt2Reserve + udt2Amount;
 
-        await checkAmounts(currentPool, result.TxHash, 0);
+        await checkAmounts(
+            currentPool,
+            result.TxHash,
+            0
+        );
     });
 
     it('# UDT / UDT Pool add liquidity', async function() {
         this.timeout(maxtime);
 
-        tx_amount1 = '100000000';
-        let liquidity = udtswap_utils.calculateAddLiquidityUDT2Amount(currentPool, tx_amount1);
-        tx_amount2 = liquidity.udt2_amount;
-        tx_amount3 = liquidity.user_liquidity;
-        addPool(tx_amount1, tx_amount2, tx_amount3, currentUDT1, currentUDT2, currentPool, is_rev);
+        udt1Amount = BigInt(100000000);
+        let liquidity = utils.calculateAddLiquidityUDT2Amount(
+            currentPool,
+            udt1Amount
+        );
+        udt2Amount = liquidity.udt2Amount;
+        liquidityUDTAmount = liquidity.userLiquidity;
+        addPool(
+            udt1Amount,
+            udt2Amount,
+            liquidityUDTAmount,
+            currentUDT1,
+            currentUDT2,
+            currentPool,
+            isRev
+        );
 
         let result = await sendTransaction(1);
-        currentPool.live_tx_hash = result.TxHash;
-        currentPool.total_liquidity = String(BigInt(currentPool.total_liquidity)+BigInt(tx_amount3));
-        currentPool.udt1_actual_reserve = String(BigInt(currentPool.udt1_actual_reserve)+BigInt(tx_amount1));
-        currentPool.udt2_actual_reserve = String(BigInt(currentPool.udt2_actual_reserve)+BigInt(tx_amount2));
-        currentPool.udt1_reserve = String(BigInt(currentPool.udt1_reserve)+BigInt(tx_amount1));
-        currentPool.udt2_reserve = String(BigInt(currentPool.udt2_reserve)+BigInt(tx_amount2));
+        currentPool.liveTxHash = result.TxHash;
+        currentPool.totalLiquidity = currentPool.totalLiquidity + liquidityUDTAmount;
+        currentPool.udt1ActualReserve = currentPool.udt1ActualReserve+ udt1Amount;
+        currentPool.udt2ActualReserve = currentPool.udt2ActualReserve + udt2Amount;
+        currentPool.udt1Reserve = currentPool.udt1Reserve + udt1Amount;
+        currentPool.udt2Reserve = currentPool.udt2Reserve + udt2Amount;
 
-        await checkAmounts(currentPool, result.TxHash, 0);
+        await checkAmounts(
+            currentPool,
+            result.TxHash,
+            0
+        );
     });
 
     it('# UDT / UDT Pool swap', async function() {
         this.timeout(maxtime);
 
-        tx_amount1 = '1234567';
-        tx_amount2 = udtswap_utils.SwapOutput(currentPool, tx_amount1, is_rev);
-        addPool(tx_amount1, tx_amount2, tx_amount3, currentUDT1, currentUDT2, currentPool, is_rev);
+        udt1Amount = BigInt(1234567);
+        udt2Amount = utils.SwapOutput(
+            currentPool,
+            udt1Amount,
+            isRev
+        );
+        addPool(
+            udt1Amount,
+            udt2Amount,
+            liquidityUDTAmount,
+            currentUDT1,
+            currentUDT2,
+            currentPool,
+            isRev
+        );
 
         let result = await sendTransaction(0);
-        currentPool.live_tx_hash = result.TxHash;
-        currentPool.udt1_actual_reserve = String(BigInt(currentPool.udt1_actual_reserve)+BigInt(tx_amount1));
-        currentPool.udt2_actual_reserve = String(BigInt(currentPool.udt2_actual_reserve)-BigInt(tx_amount2));
-        currentPool.udt1_reserve = String(BigInt(currentPool.udt1_reserve)+BigInt(tx_amount1));
-        currentPool.udt2_reserve = String(BigInt(currentPool.udt2_reserve)-BigInt(tx_amount2));
+        currentPool.liveTxHash = result.TxHash;
+        currentPool.udt1ActualReserve = currentPool.udt1ActualReserve + udt1Amount;
+        currentPool.udt2ActualReserve = currentPool.udt2ActualReserve- udt2Amount;
+        currentPool.udt1Reserve = currentPool.udt1Reserve + udt1Amount;
+        currentPool.udt2Reserve = currentPool.udt2Reserve - udt2Amount;
 
-        await checkAmounts(currentPool, result.TxHash, 0);
+        await checkAmounts(
+            currentPool,
+            result.TxHash,
+            0
+        );
     });
 
     it('# UDT / UDT Pool swap reverse', async function() {
         this.timeout(maxtime);
         
-        is_rev = true;
-        tx_amount1 = '1234567';
-        tx_amount2 = udtswap_utils.SwapOutput(currentPool, tx_amount1, is_rev);
-        addPool(tx_amount1, tx_amount2, tx_amount3, currentUDT2, currentUDT1, currentPool, is_rev);
+        isRev = true;
+        udt1Amount = BigInt(1234567);
+        udt2Amount = utils.SwapOutput(
+            currentPool,
+            udt1Amount,
+            isRev
+        );
+        addPool(
+            udt1Amount,
+            udt2Amount,
+            liquidityUDTAmount,
+            currentUDT2,
+            currentUDT1,
+            currentPool,
+            isRev
+        );
 
         let result = await sendTransaction(0);
-        currentPool.live_tx_hash = result.TxHash;
-        currentPool.udt1_actual_reserve = String(BigInt(currentPool.udt1_actual_reserve)-BigInt(tx_amount2));
-        currentPool.udt2_actual_reserve = String(BigInt(currentPool.udt2_actual_reserve)+BigInt(tx_amount1));
-        currentPool.udt1_reserve = String(BigInt(currentPool.udt1_reserve)-BigInt(tx_amount2));
-        currentPool.udt2_reserve = String(BigInt(currentPool.udt2_reserve)+BigInt(tx_amount1));
+        currentPool.liveTxHash = result.TxHash;
+        currentPool.udt1ActualReserve = currentPool.udt1ActualReserve - udt2Amount;
+        currentPool.udt2ActualReserve = currentPool.udt2ActualReserve + udt1Amount;
+        currentPool.udt1Reserve = currentPool.udt1Reserve - udt2Amount;
+        currentPool.udt2Reserve = currentPool.udt2Reserve + udt1Amount;
 
-        await checkAmounts(currentPool, result.TxHash, 0);
+        await checkAmounts(
+            currentPool,
+            result.TxHash,
+            0
+        );
     });
 
     it('# UDT / UDT Pool remove liquidity', async function() {
         this.timeout(maxtime);
 
-        tx_amount1 = '1234567';
-        let liquidity = udtswap_utils.calculateRemoveLiquidityAmount(currentPool, tx_amount1);
-        tx_amount2 = liquidity.udt1_amount;
-        tx_amount3 = liquidity.udt2_amount;
-        addPool(tx_amount1, tx_amount2, tx_amount3, currentUDT1, currentUDT2, currentPool, is_rev);
+        liquidityUDTAmount = BigInt(1234567);
+        let liquidity = utils.calculateRemoveLiquidityAmount(
+            currentPool,
+            liquidityUDTAmount
+        );
+        udt1Amount = liquidity.udt1Amount;
+        udt2Amount = liquidity.udt2Amount;
+        addPool(
+            udt1Amount,
+            udt2Amount,
+            liquidityUDTAmount,
+            currentUDT1,
+            currentUDT2,
+            currentPool,
+            isRev
+        );
 
         let result = await sendTransaction(2);
-        currentPool.live_tx_hash = result.TxHash;
-        currentPool.total_liquidity = String(BigInt(currentPool.total_liquidity) - BigInt(tx_amount1));
-        currentPool.udt1_actual_reserve = String(BigInt(currentPool.udt1_actual_reserve)-BigInt(tx_amount2));
-        currentPool.udt2_actual_reserve = String(BigInt(currentPool.udt2_actual_reserve)-BigInt(tx_amount3));
-        currentPool.udt1_reserve = String(BigInt(currentPool.udt1_reserve)-BigInt(tx_amount2));
-        currentPool.udt2_reserve = String(BigInt(currentPool.udt2_reserve)-BigInt(tx_amount3));
+        currentPool.liveTxHash = result.TxHash;
+        currentPool.totalLiquidity = currentPool.totalLiquidity - liquidityUDTAmount;
+        currentPool.udt1ActualReserve = currentPool.udt1ActualReserve - udt1Amount;
+        currentPool.udt2ActualReserve = currentPool.udt2ActualReserve - udt2Amount;
+        currentPool.udt1Reserve = currentPool.udt1Reserve - udt1Amount;
+        currentPool.udt2Reserve = currentPool.udt2Reserve - udt2Amount;
 
-        await checkAmounts(currentPool, result.TxHash, 0);
+        await checkAmounts(
+            currentPool,
+            result.TxHash,
+            0
+        );
     });
 
     it('# CKB / UDT Pool creation', async function() {
         this.timeout(maxtime);
 
-        tx_amount1 = ckbAsUDT.udt_typehash;
-        tx_amount2 = currentUDT2.udt_typehash;
-        addPool(tx_amount1, tx_amount2, tx_amount3, ckbAsUDT, currentUDT2, '', is_rev);
+        addPool(
+            udt1Amount,
+            udt2Amount,
+            liquidityUDTAmount,
+            ckbAsUDT,
+            currentUDT2,
+            '',
+            isRev
+        );
 
         let result = await sendTransaction(3);
-        currentPoolCKB.tx_input_0 = result.inputSerialized;
-        currentPoolCKB.live_tx_hash = result.TxHash;
-        currentPoolCKB.total_liquidity = 0;
-        currentPoolCKB.udt1_typehash = ckbAsUDT.udt_typehash;
-        currentPoolCKB.udt2_typehash = currentUDT2.udt_typehash;
-        currentPoolCKB.udt1_reserve = udtswap_consts.ckbLockCellMinimum;
-        currentPoolCKB.udt2_reserve = udtswap_consts.udtMinimum;
-        currentPoolCKB.udt1_actual_reserve = '0';
-        currentPoolCKB.udt2_actual_reserve = '0';
+        currentPoolCKB.poolIdentifier = result.inputSerialized;
+        currentPoolCKB.liveTxHash = result.TxHash;
+        currentPoolCKB.totalLiquidity = BigInt(0);
+        currentPoolCKB.udt1TypeHash = ckbAsUDT.udtTypeHash;
+        currentPoolCKB.udt2TypeHash = currentUDT2.udtTypeHash;
+        currentPoolCKB.udt1Reserve = BigInt(consts.ckbLockCellMinimum);
+        currentPoolCKB.udt2Reserve = BigInt(consts.udtMinimum);
+        currentPoolCKB.udt1ActualReserve = BigInt(0);
+        currentPoolCKB.udt2ActualReserve = BigInt(0);
 
-        await checkAmounts(currentPoolCKB, result.TxHash, 0);
+        await checkAmounts(
+            currentPoolCKB,
+            result.TxHash,
+            0
+        );
     });
 
     it('# CKB / UDT Pool add liquidity initial', async function() {
         this.timeout(maxtime);
 
-        tx_amount1 = '100000000000';
-        tx_amount2 = '500000000';
-        tx_amount3 = '100000000000';
-        addPool(tx_amount1, tx_amount2, tx_amount3, ckbAsUDT, currentUDT2, currentPoolCKB, is_rev);
+        udt1Amount = BigInt(100000000000);
+        udt2Amount = BigInt(500000000);
+        liquidityUDTAmount = BigInt(100000000000);
+        addPool(
+            udt1Amount,
+            udt2Amount,
+            liquidityUDTAmount,
+            ckbAsUDT,
+            currentUDT2,
+            currentPoolCKB,
+            isRev
+        );
 
         let result = await sendTransaction(1);
-        currentPoolCKB.live_tx_hash = result.TxHash;
-        currentPoolCKB.total_liquidity = String(BigInt(tx_amount3));
-        currentPoolCKB.udt1_actual_reserve = String(BigInt(tx_amount1));
-        currentPoolCKB.udt2_actual_reserve = String(BigInt(tx_amount2));
-        currentPoolCKB.udt1_reserve = String(BigInt(currentPoolCKB.udt1_reserve)+BigInt(tx_amount1));
-        currentPoolCKB.udt2_reserve = String(BigInt(currentPoolCKB.udt2_reserve)+BigInt(tx_amount2));
+        currentPoolCKB.liveTxHash = result.TxHash;
+        currentPoolCKB.totalLiquidity = liquidityUDTAmount;
+        currentPoolCKB.udt1ActualReserve = udt1Amount;
+        currentPoolCKB.udt2ActualReserve = udt2Amount;
+        currentPoolCKB.udt1Reserve = currentPoolCKB.udt1Reserve + udt1Amount;
+        currentPoolCKB.udt2Reserve = currentPoolCKB.udt2Reserve + udt2Amount;
 
-        await checkAmounts(currentPoolCKB, result.TxHash, 0);
+        await checkAmounts(
+            currentPoolCKB,
+            result.TxHash,
+            0
+        );
     });
 
     it('# CKB / UDT Pool add liquidity', async function() {
         this.timeout(maxtime);
 
-        tx_amount1 = '100000000';
-        let liquidity = udtswap_utils.calculateAddLiquidityUDT2Amount(currentPoolCKB, tx_amount1);
-        tx_amount2 = liquidity.udt2_amount;
-        tx_amount3 = liquidity.user_liquidity;
-        addPool(tx_amount1, tx_amount2, tx_amount3, ckbAsUDT, currentUDT2, currentPoolCKB, is_rev);
+        udt1Amount = BigInt(100000000);
+        let liquidity = utils.calculateAddLiquidityUDT2Amount(
+            currentPoolCKB,
+            udt1Amount
+        );
+        udt2Amount = liquidity.udt2Amount;
+        liquidityUDTAmount = liquidity.userLiquidity;
+        addPool(
+            udt1Amount,
+            udt2Amount,
+            liquidityUDTAmount,
+            ckbAsUDT,
+            currentUDT2,
+            currentPoolCKB,
+            isRev
+        );
 
         let result = await sendTransaction(1);
-        currentPoolCKB.live_tx_hash = result.TxHash;
-        currentPoolCKB.total_liquidity = String(BigInt(currentPoolCKB.total_liquidity)+BigInt(tx_amount3));
-        currentPoolCKB.udt1_actual_reserve = String(BigInt(currentPoolCKB.udt1_actual_reserve)+BigInt(tx_amount1));
-        currentPoolCKB.udt2_actual_reserve = String(BigInt(currentPoolCKB.udt2_actual_reserve)+BigInt(tx_amount2));
-        currentPoolCKB.udt1_reserve = String(BigInt(currentPoolCKB.udt1_reserve)+BigInt(tx_amount1));
-        currentPoolCKB.udt2_reserve = String(BigInt(currentPoolCKB.udt2_reserve)+BigInt(tx_amount2));
+        currentPoolCKB.liveTxHash = result.TxHash;
+        currentPoolCKB.totalLiquidity = currentPoolCKB.totalLiquidity + liquidityUDTAmount;
+        currentPoolCKB.udt1ActualReserve = currentPoolCKB.udt1ActualReserve + udt1Amount;
+        currentPoolCKB.udt2ActualReserve = currentPoolCKB.udt2ActualReserve + udt2Amount;
+        currentPoolCKB.udt1Reserve = currentPoolCKB.udt1Reserve + udt1Amount;
+        currentPoolCKB.udt2Reserve = currentPoolCKB.udt2Reserve + udt2Amount;
 
-        await checkAmounts(currentPoolCKB, result.TxHash, 0);
+        await checkAmounts(
+            currentPoolCKB,
+            result.TxHash,
+            0
+        );
     });
 
     it('# CKB / UDT Pool swap', async function() {
         this.timeout(maxtime);
 
-        tx_amount1 = '1234567';
-        tx_amount2 = udtswap_utils.SwapOutput(currentPoolCKB, tx_amount1, is_rev);
-        addPool(tx_amount1, tx_amount2, tx_amount3, ckbAsUDT, currentUDT2, currentPoolCKB, is_rev);
+        udt1Amount = BigInt(1234567);
+        udt2Amount = utils.SwapOutput(
+            currentPoolCKB,
+            udt1Amount,
+            isRev
+        );
+        addPool(
+            udt1Amount,
+            udt2Amount,
+            liquidityUDTAmount,
+            ckbAsUDT,
+            currentUDT2,
+            currentPoolCKB,
+            isRev
+        );
 
         let result = await sendTransaction(0);
-        currentPoolCKB.live_tx_hash = result.TxHash;
-        currentPoolCKB.udt1_actual_reserve = String(BigInt(currentPoolCKB.udt1_actual_reserve)+BigInt(tx_amount1));
-        currentPoolCKB.udt2_actual_reserve = String(BigInt(currentPoolCKB.udt2_actual_reserve)-BigInt(tx_amount2));
-        currentPoolCKB.udt1_reserve = String(BigInt(currentPoolCKB.udt1_reserve)+BigInt(tx_amount1));
-        currentPoolCKB.udt2_reserve = String(BigInt(currentPoolCKB.udt2_reserve)-BigInt(tx_amount2));
+        currentPoolCKB.liveTxHash = result.TxHash;
+        currentPoolCKB.udt1ActualReserve = currentPoolCKB.udt1ActualReserve + udt1Amount;
+        currentPoolCKB.udt2ActualReserve = currentPoolCKB.udt2ActualReserve - udt2Amount;
+        currentPoolCKB.udt1Reserve = currentPoolCKB.udt1Reserve + udt1Amount;
+        currentPoolCKB.udt2Reserve = currentPoolCKB.udt2Reserve - udt2Amount;
 
-        await checkAmounts(currentPoolCKB, result.TxHash, 0);
+        await checkAmounts(
+            currentPoolCKB,
+            result.TxHash,
+            0
+        );
     });
 
     it('# CKB / UDT Pool swap reverse', async function() {
         this.timeout(maxtime);
 
-        is_rev = true;
-        tx_amount1 = '200000000';
-        tx_amount2 = udtswap_utils.SwapOutput(currentPoolCKB, tx_amount1, is_rev);
-        addPool(tx_amount1, tx_amount2, tx_amount3, currentUDT2, ckbAsUDT, currentPoolCKB, is_rev);
+        isRev = true;
+        udt1Amount = BigInt(200000000);
+        udt2Amount = utils.SwapOutput(
+            currentPoolCKB,
+            udt1Amount,
+            isRev
+        );
+        addPool(
+            udt1Amount,
+            udt2Amount,
+            liquidityUDTAmount,
+            currentUDT2,
+            ckbAsUDT,
+            currentPoolCKB,
+            isRev
+        );
 
         let result = await sendTransaction(0);
-        currentPoolCKB.live_tx_hash = result.TxHash;
-        currentPoolCKB.udt1_actual_reserve = String(BigInt(currentPoolCKB.udt1_actual_reserve)-BigInt(tx_amount2));
-        currentPoolCKB.udt2_actual_reserve = String(BigInt(currentPoolCKB.udt2_actual_reserve)+BigInt(tx_amount1));
-        currentPoolCKB.udt1_reserve = String(BigInt(currentPoolCKB.udt1_reserve)-BigInt(tx_amount2));
-        currentPoolCKB.udt2_reserve = String(BigInt(currentPoolCKB.udt2_reserve)+BigInt(tx_amount1));
+        currentPoolCKB.liveTxHash = result.TxHash;
+        currentPoolCKB.udt1ActualReserve = currentPoolCKB.udt1ActualReserve - udt2Amount;
+        currentPoolCKB.udt2ActualReserve = currentPoolCKB.udt2ActualReserve + udt1Amount;
+        currentPoolCKB.udt1Reserve = currentPoolCKB.udt1Reserve - udt2Amount;
+        currentPoolCKB.udt2Reserve = currentPoolCKB.udt2Reserve + udt1Amount;
 
-        await checkAmounts(currentPoolCKB, result.TxHash, 0);
+        await checkAmounts(
+            currentPoolCKB,
+            result.TxHash,
+            0
+        );
     });
 
     it('# CKB / UDT Pool remove liquidity', async function() {
         this.timeout(maxtime);
 
-        tx_amount1 = '50000000000';
-        let liquidity = udtswap_utils.calculateRemoveLiquidityAmount(currentPoolCKB, tx_amount1);
-        tx_amount2 = liquidity.udt1_amount;
-        tx_amount3 = liquidity.udt2_amount;
-        addPool(tx_amount1, tx_amount2, tx_amount3, ckbAsUDT, currentUDT2, currentPoolCKB, is_rev);
+        liquidityUDTAmount = BigInt(50000000000);
+        let liquidity = utils.calculateRemoveLiquidityAmount(
+            currentPoolCKB,
+            liquidityUDTAmount
+        );
+        udt1Amount = liquidity.udt1Amount;
+        udt2Amount = liquidity.udt2Amount;
+        addPool(
+            udt1Amount,
+            udt2Amount,
+            liquidityUDTAmount,
+            ckbAsUDT,
+            currentUDT2,
+            currentPoolCKB,
+            isRev
+        );
 
         let result = await sendTransaction(2);
-        currentPoolCKB.live_tx_hash = result.TxHash;
-        currentPoolCKB.total_liquidity = String(BigInt(currentPoolCKB.total_liquidity)-BigInt(tx_amount1));
-        currentPoolCKB.udt1_actual_reserve = String(BigInt(currentPoolCKB.udt1_actual_reserve)-BigInt(tx_amount2));
-        currentPoolCKB.udt2_actual_reserve = String(BigInt(currentPoolCKB.udt2_actual_reserve)-BigInt(tx_amount3));
-        currentPoolCKB.udt1_reserve = String(BigInt(currentPoolCKB.udt1_reserve)-BigInt(tx_amount2));
-        currentPoolCKB.udt2_reserve = String(BigInt(currentPoolCKB.udt2_reserve)-BigInt(tx_amount3));
+        currentPoolCKB.liveTxHash = result.TxHash;
+        currentPoolCKB.totalLiquidity = currentPoolCKB.totalLiquidity - liquidityUDTAmount;
+        currentPoolCKB.udt1ActualReserve = currentPoolCKB.udt1ActualReserve - udt1Amount;
+        currentPoolCKB.udt2ActualReserve = currentPoolCKB.udt2ActualReserve - udt2Amount;
+        currentPoolCKB.udt1Reserve = currentPoolCKB.udt1Reserve - udt1Amount;
+        currentPoolCKB.udt2Reserve = currentPoolCKB.udt2Reserve - udt2Amount;
 
-        await checkAmounts(currentPoolCKB, result.TxHash, 0);
+        await checkAmounts(
+            currentPoolCKB,
+            result.TxHash,
+            0
+        );
     });
 
     it('# Multiple Pool swap', async function() {
         this.timeout(maxtime);
 
-        tx_amount1 = '1234567';
-        tx_amount2 = udtswap_utils.SwapOutput(currentPoolCKB, tx_amount1, is_rev);
+        udt1Amount = BigInt(1234567);
+        udt2Amount = utils.SwapOutput(
+            currentPoolCKB,
+            udt1Amount,
+            isRev
+        );
 
-        let first_pool_tx_amount1 = tx_amount1;
-        let first_pool_tx_amount2 = tx_amount2;
+        let firstPoolUDT1Amount = udt1Amount;
+        let firstPoolUDT2Amount = udt2Amount;
 
-        addPool(first_pool_tx_amount1, first_pool_tx_amount2, tx_amount3, ckbAsUDT, currentUDT2, currentPoolCKB, is_rev);
+        addPool(
+            firstPoolUDT1Amount,
+            firstPoolUDT2Amount,
+            liquidityUDTAmount,
+            ckbAsUDT,
+            currentUDT2,
+            currentPoolCKB,
+            isRev
+        );
 
-        is_rev = true;
-        tx_amount1 = '1234567';
-        tx_amount2 = udtswap_utils.SwapOutput(currentPool, tx_amount1, is_rev);
-        addPool(tx_amount1, tx_amount2, tx_amount3, currentUDT2, currentUDT1, currentPool, is_rev);
+        isRev = true;
+        udt1Amount = BigInt(1234567);
+        udt2Amount = utils.SwapOutput(
+            currentPool,
+            udt1Amount,
+            isRev
+        );
+        addPool(
+            udt1Amount,
+            udt2Amount,
+            liquidityUDTAmount,
+            currentUDT2,
+            currentUDT1,
+            currentPool,
+            isRev
+        );
 
         let result = await sendTransaction(0);
-        currentPoolCKB.live_tx_hash = result.TxHash;
-        currentPool.live_tx_hash = result.TxHash;
+        currentPoolCKB.liveTxHash = result.TxHash;
+        currentPool.liveTxHash = result.TxHash;
 
-        currentPoolCKB.udt1_actual_reserve = String(BigInt(currentPoolCKB.udt1_actual_reserve)+BigInt(first_pool_tx_amount1));
-        currentPoolCKB.udt2_actual_reserve = String(BigInt(currentPoolCKB.udt2_actual_reserve)-BigInt(first_pool_tx_amount2));
-        currentPoolCKB.udt1_reserve = String(BigInt(currentPoolCKB.udt1_reserve)+BigInt(first_pool_tx_amount1));
-        currentPoolCKB.udt2_reserve = String(BigInt(currentPoolCKB.udt2_reserve)-BigInt(first_pool_tx_amount2));
+        currentPoolCKB.udt1ActualReserve = currentPoolCKB.udt1ActualReserve + firstPoolUDT1Amount;
+        currentPoolCKB.udt2ActualReserve = currentPoolCKB.udt2ActualReserve - firstPoolUDT2Amount;
+        currentPoolCKB.udt1Reserve = currentPoolCKB.udt1Reserve + firstPoolUDT1Amount;
+        currentPoolCKB.udt2Reserve = currentPoolCKB.udt2Reserve - firstPoolUDT2Amount;
 
-        currentPool.udt1_actual_reserve = String(BigInt(currentPool.udt1_actual_reserve)-BigInt(tx_amount2));
-        currentPool.udt2_actual_reserve = String(BigInt(currentPool.udt2_actual_reserve)+BigInt(tx_amount1));
-        currentPool.udt1_reserve = String(BigInt(currentPool.udt1_reserve)-BigInt(tx_amount2));
-        currentPool.udt2_reserve = String(BigInt(currentPool.udt2_reserve)+BigInt(tx_amount1));
+        currentPool.udt1ActualReserve = currentPool.udt1ActualReserve - udt2Amount;
+        currentPool.udt2ActualReserve = currentPool.udt2ActualReserve + udt1Amount;
+        currentPool.udt1Reserve = currentPool.udt1Reserve - udt2Amount;
+        currentPool.udt2Reserve = currentPool.udt2Reserve + udt1Amount;
 
-        await checkAmounts(currentPoolCKB, result.TxHash, 3);
-        await checkAmounts(currentPool, result.TxHash, 0);
+        await checkAmounts(
+            currentPoolCKB,
+            result.TxHash,
+            3
+        );
+        await checkAmounts(
+            currentPool,
+            result.TxHash,
+            0
+        );
     });
 });
