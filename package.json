@@ -1,17 +1,13 @@
 {
-  "name": "udtswap_testcases",
+  "name": "udtswap_scripts",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
   "scripts": {
     "test": "mocha"
   },
   "dependencies": {
     "@nervosnetwork/ckb-sdk-core": "^0.29.1",
-    "bigdecimal": "^0.6.1",
-    "mocha": "^8.0.1",
-    "request": "^2.88.2"
+    "fs": "0.0.1-security",
+    "mocha": "^8.0.1"
   },
-  "author": "",
   "license": "MIT"
 }
